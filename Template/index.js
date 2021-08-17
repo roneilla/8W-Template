@@ -41,6 +41,7 @@ const onxrloaded = () => {
 		XRExtras.AlmostThere.pipelineModule(), // Detects unsupported browsers and gives hints.
 		XRExtras.FullWindowCanvas.pipelineModule(), // Modifies the canvas to fill the window.
 		XRExtras.RuntimeError.pipelineModule(), // Shows an error image on runtime error.
+		XRExtras.Loading.pipelineModule(),           // Manages the loading screen on startup.
 	]);
 
 	XR8.addCameraPipelineModule({
