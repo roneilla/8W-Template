@@ -50,7 +50,6 @@ class Video {
 		this.subtitles = subtitles;
 		this.orientation = orientation;
 		this.scale = scale;
-		this.subtitle = document.getElementById("subtitle");
 
 		if (greenScreen) {
 			this.videoMaterial = new THREE.ShaderMaterial({
@@ -84,26 +83,51 @@ class Video {
 		this.video.load();
 	}
 
-	showVideo({ posX, posZ, rotX, rotY, rotZ }) {
+	showVideo({ detail, posX, posZ, rotX, rotY, rotZ }) {
 		if (this.orientation === "landscape") {
 			this.scaleX = this.scale * 1.77;
 			this.scaleY = this.scale;
 		} else if (this.orientation === "portrait") {
 			this.scaleX = this.scale;
 			this.scaleY = this.scale * 1.77;
+		} else if (this.orientation === "square") {
+			this.scaleX = this.scale;
+			this.scaleY = this.scale;
 		}
 
-		this.posY = this.scaleY / 2 - 2;
-
-		this.video.play();
+		if (detail) {
+			this.videoObj.position.copy(detail.position);
+			this.videoObj.quaternion.copy(detail.rotation);
+			this.videoObj.scale.set(
+				detail.scale * this.scaleX,
+				detail.scale * this.scaleY,
+				detail.scale
+			);
+		} else {
+			this.posY = this.videoObj.height / 2;
+			this.videoObj.position.set(posX, this.posY, posZ);
+			this.videoObj.rotation.set(rotX, rotY, rotZ);
+			this.videoObj.scale.set(this.scaleX, this.scaleY, this.scale);
+		}
 		this.videoObj.visible = true;
-		this.videoObj.position.set(posX, this.posY, posZ);
-		this.videoObj.rotation.set(rotX, rotY, rotZ);
-		this.videoObj.scale.set(this.scaleX, this.scaleY, this.scale);
+	}
+
+	isPlaying() {
+		if (
+			this.video.currentTime > 0 &&
+			!this.video.paused &&
+			!this.video.ended &&
+			this.video.readyState > 2
+		) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	pauseVideo() {
 		this.video.pause();
+		console.log("pausing");
 	}
 
 	playVideo() {
@@ -116,26 +140,29 @@ class Video {
 		this.videoObj.visible = false;
 	}
 
-	playAudio(audio) {
+	playAudio(audio, timeout) {
 		this.video.onended = () => {
 			setTimeout(() => {
-				document.getElementById("charlieTap").style.display = "block";
-
 				audio.play();
-			}, 1000);
+			}, timeout);
 		};
 	}
 
-	addSubtitles() {
+	showSubtitles(subtitleContainer) {
+		subtitleContainer.style.display = "block";
 		this.currTime = this.video.currentTime * 1000;
 		for (let i = 0; i < this.subtitles.length; i++) {
 			this.timeIn = this.subtitles[i].timein;
 			this.timeOut = this.subtitles[i].timeout;
 
 			if (this.currTime >= this.timeIn && this.currTime <= this.timeOut) {
-				this.subtitle.innerHTML = this.subtitles[i].text;
+				subtitleContainer.innerHTML = this.subtitles[i].text;
 			}
 		}
+	}
+
+	hideSubtitles(subtitleContainer) {
+		subtitleContainer.style.display = "none";
 	}
 
 	updateRotation(camera) {
@@ -148,7 +175,7 @@ class Video {
 }
 
 class Image {
-	constructor({ src, scene, width, height }) {
+	constructor({ src, scene, width, height, scale }) {
 		this.material = new THREE.MeshBasicMaterial({
 			map: loader.load(src),
 			transparent: true,
@@ -159,20 +186,24 @@ class Image {
 			this.material
 		);
 
+		this.scale = scale;
+
 		this.imgObj.visible = false;
 
 		scene.add(this.imgObj);
 	}
 
-	showImage(marker) {
+	showImage({ detail, posX, posY, posZ, rotX, rotY, rotZ }) {
+		if (detail) {
+			this.imgObj.position.copy(detail.position);
+			this.imgObj.quaternion.copy(detail.rotation);
+			this.imgObj.scale.set(detail.scale, detail.scale, detail.scale);
+		} else {
+			this.videoObj.position.set(posX, posY, posZ);
+			this.videoObj.rotation.set(rotX, rotY, rotZ);
+			this.videoObj.scale.set(this.scale, this.scale, this.scale);
+		}
 		this.imgObj.visible = true;
-		this.imgObj.position.set(
-			marker.position.x,
-			marker.position.y,
-			marker.position.z
-		);
-		this.imgObj.quaternion.copy(marker.rotation);
-		this.imgObj.scale.set(marker.scale, marker.scale, marker.scale);
 	}
 
 	hideImage() {
